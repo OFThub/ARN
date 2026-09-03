@@ -10,8 +10,19 @@ this folder.
 | `district.geojson` | OpenStreetMap via Nominatim, relation `1766093` | © OpenStreetMap contributors, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/) |
 | `mahalle.geojson` | Nominatim geocoding + Voronoi partition (**approximate boundaries**) | © OpenStreetMap contributors, ODbL 1.0 |
 | `mahalle-nufus.json` | District population (335,000 / 2023) distributed across neighborhoods by OSM building footprint area | Derived estimate — see caveat below |
+| `durak.geojson` | 649 bus stops (`highway=bus_stop`) filtered from the district's OSM snapshot | © OpenStreetMap contributors, ODbL 1.0 |
+| `yol.geojson` | 1,601 arterial segments (motorway…tertiary and their links) from the same snapshot | © OpenStreetMap contributors, ODbL 1.0 |
 
 ## Caveats that must not be lost
+
+- **`yol.geojson` carries geometry, class and name — no traffic.** Nobody counted a
+  vehicle on these roads. The load shown in the final phase is modelled in
+  `lib/traffic.ts` from road class, distance to the employment poles and the hour
+  of day. The network is real; the congestion on it is an estimate.
+- **`durak.geojson` carries stop locations only.** No route geometry, no timetable, no service
+  frequency — OSM's `highway=bus_stop` nodes record where a stop is, not what serves it. The
+  access analysis in `lib/accessibility.ts` therefore measures stop *provision*, never journey
+  time, and the UI states this wherever those figures appear.
 
 - **`mahalle.geojson` boundaries are approximate.** Every feature carries
   `geometri_kaynak: "yaklasik-voronoi"` and `yaklasik: true`. The *centroids* (`merkez_lon`,

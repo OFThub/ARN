@@ -13,10 +13,10 @@ the project is; this file covers what an agent needs in order not to break it.
 | Production build | `npm run build` |
 | Types | `npm run typecheck` |
 | Lint | `npm run lint` |
-| Tests | `npm test` — 11 tests, `node --test`, no framework |
+| Tests | `npm test` — 30 tests, `node --test`, no framework |
 
 All four gates MUST pass before work is called done. `npm test` is fast; run it after any
-change to `lib/simulation.ts`.
+change to `lib/simulation.ts`, `lib/accessibility.ts` or `lib/traffic.ts`.
 
 ## Conventions this codebase already follows
 
@@ -66,8 +66,19 @@ leaving the rest of the layer fully type-checked. See `overlaySlot` in `lib/laye
 
 ## Data honesty
 
-`public/data/` is real OSM/İBB-derived data; `lib/simulation.ts` is modelled. Do not blur that
-line in UI copy or documentation. The neighborhood polygons are approximate (Voronoi) and the
+Two modules produce numbers and they must never be mixed:
+
+- **`lib/accessibility.ts` is measured.** 649 real stops, real polygons, real population. Any
+  figure it produces can be traced to a coordinate. UI marks it `ölçülen` / `measured`.
+- **`lib/simulation.ts` and `lib/traffic.ts` are modelled.** Hand-tuned demand curves, and a
+  road load derived from class/proximity/hour. The road *geometry* is real; the traffic on it
+  is not. UI marks both `sim`.
+
+A number from one must never be presented in the styling of the other, and the access
+analysis's limit (stop locations only — no routes, no frequency, so no journey time) MUST stay
+visible wherever its figures appear.
+
+`public/data/` is real OSM/İBB-derived data. Do not blur that line in UI copy or documentation. The neighborhood polygons are approximate (Voronoi) and the
 population split is an estimate — `public/data/ATTRIBUTION.md` records both caveats and they
 MUST survive any rewrite.
 

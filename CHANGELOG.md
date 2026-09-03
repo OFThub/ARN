@@ -110,6 +110,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All ten phase cards in `lib/phases.ts` now carry real outcomes; none is left
   marked `planned`.
 
+### Added — phase 11, street-level traffic
+
+- `public/data/yol.geojson` — 1,601 real arterial segments (motorway through
+  tertiary and their links) filtered out of the district's OSM snapshot, with
+  their true class and name.
+- `lib/traffic.ts` + 9 tests — the load model. Geometry, class and name are
+  real; the load is estimated from road class, distance to the airport and the
+  Hadımköy OSB, and the shared hourly traffic curve. Unknown road classes are
+  dropped rather than given a default capacity.
+- A `PathLayer` colours and widens each segment by load, following the time
+  slider: at 03:00 the busiest road is 8.9 px and cyan, at 08:00 it is 30.3 px
+  and violet.
+- `F` jumps straight to the finale from anywhere, including with the demo closed.
+
+Three defects surfaced while building it:
+
+- The "last phase defers to the user's toggles" rule was written as an id
+  comparison against `LAST_PHASE`, so adding phase 11 silently moved it. It is
+  now an explicit `deferToUser` flag on phase 10.
+- The phase counter was hardcoded to `/ 10` and would have lied from the moment
+  an eleventh phase existed; it reads `PHASES.length`.
+- The left panel showed the *stored* layer switches while a phase was overriding
+  them — the map said one thing and the panel another. It now receives what the
+  map actually draws, and the buttons are disabled while a phase dictates them.
+
+Two rendering problems, both worth recording:
+
+- Road width in metres is sub-pixel at district zoom. Switched to pixel units:
+  traffic legibility should not depend on camera distance.
+- The layer was invisible under `beforeId`. The overlay slot targets the first
+  symbol layer, which in this basemap is `water_name` — and the style draws its
+  own street lines *after* that, so a slotted path renders beneath the very
+  roads it colours. The traffic layer is deliberately left unslotted.
+
+### Fixed — audit sweep
+
+- `.env.example` was unreachable: `.gitignore`'s `.env*` swallowed it, so the file
+  could never be committed. Added the `!.env.example` negation.
+- Phase cards 7 and 8 described features the access rewrite had removed — a
+  sparkline that no longer exists and a radial chart replaced by the ranking.
+  A walkthrough that misdescribes the screen behind it is worse than none.
+- `CLAUDE.md` claimed 11 tests; there are 21.
+- Removed what the rewrite orphaned in `lib/simulation.ts`: `metricsAt`, the
+  `Metrics` type, `hourlySeries` and the three peak constants that fed only
+  them, plus the two tests that guarded them. They had no caller outside their
+  own test file.
+
+### Fixed — the correctable defects
+
+- The score weighting is a slider, not a constant. `computeAccess` takes the
+  service/distance split as an argument and the left panel exposes it, so a
+  reader who weighs the two differently watches the ranking follow their own
+  assumption. Two tests pin the behaviour: full service load puts Hastane first,
+  full distance puts the remote villages first.
+- A test caught a real hole while adding it: `Math.max(0, NaN)` is `NaN`, so the
+  clamp let a non-finite weight through and turned every score into `NaN`. Both
+  the analysis and the store now fall back to the default on non-finite input.
+- Map labels thin out with zoom — three at z9, all nine by z12 — chosen
+  busiest-first. Fixed pixel offsets can separate a known pair but cannot help
+  when the whole district is 400 px wide.
+- Both panels are height-capped and scroll internally; adding the weighting
+  control had pushed the left panel off the bottom of the viewport.
+- `.env.example` documents the one optional variable.
+
+Two defects are **not** fixed, because they are data limits rather than code:
+journey time cannot be computed without route and timetable data, and the
+population figures are themselves a modelled distribution. Both are stated in
+the UI, the README and the attribution file.
+
+### Changed — the project now answers a real question
+
+The dashboard was a visual specification built to the letter: neon arcs over simulated
+volumes, with no user, no decision and no measurement behind it. It now leads with a
+question that real data can answer.
+
+- `lib/accessibility.ts` + 10 tests — the measured analysis. 649 real OSM bus stops
+  attributed to 38 neighborhoods by point-in-polygon, population per stop, distance to the
+  airport and the Hadımköy industrial zone, and a composite disadvantage score. No PRNG,
+  no modelling.
+- `public/data/durak.geojson` — the stops, filtered out of the district's OSM snapshot.
+  (`otobus-duragi.geojson`, referenced by a constant in the sibling project, never existed.)
+- The choropleth now paints measured access disadvantage instead of raw population density,
+  with opacity riding the score so well-served neighborhoods fade and the problem stands out.
+- Left panel shows measured figures; right panel ranks the six hardest-to-reach
+  neighborhoods. The simulated flow layer stays, labelled `sim` on every toggle and
+  `simülasyon` on its chart, so measurement and model are never read as the same thing.
+- The analysis's limit is stated in the UI, the README, `CLAUDE.md` and the attribution file:
+  stop locations only, so this measures provision and not journey time.
+
+**The finding:** 7 of 38 neighborhoods are underserved, and they hold 48% of the district
+(159,392 people). All seven are within 10 km of work. Hastane is 0.6 km from the airport at
+2,344 people per stop against a district average of 516 — a 49-fold spread.
+
 ### Fixed (post-phase-10)
 
 - The neighborhood-density and corridor-heatmap layers were off in
